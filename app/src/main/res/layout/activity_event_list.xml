@@ -122,36 +122,6 @@
                 android:textStyle="bold" />
         </TableRow>
 
-        <!-- Sample row (placeholder to show layout) -->
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Birthday Party" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="05/12/2025" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Chicago" />
-
-            <Button
-                android:id="@+id/buttonDeleteSample"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="X" />
-        </TableRow>
 
     </TableLayout>
 
