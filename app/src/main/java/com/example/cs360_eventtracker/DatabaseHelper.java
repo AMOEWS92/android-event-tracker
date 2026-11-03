@@ -104,6 +104,80 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rowsDeleted > 0;
     }
 
+    public long createUser(String username, String password) {
+
+        // Generate a unique salt
+        String salt = PasswordUtils.generateSalt();
+
+        // Hash the user's password
+        String passwordHash =
+                PasswordUtils.hashPassword(password, salt);
+
+        // Prepare the database
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put("username", username);
+        values.put("password_hash", passwordHash);
+        values.put("password_salt", salt);
+
+        // Save the user without replacing existing accounts
+        return db.insertWithOnConflict(
+                "users",
+                null,
+                values,
+                SQLiteDatabase.CONFLICT_IGNORE
+        );
+    }
+
+    public long validateLogin(String username, String password) {
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        // Look for an account with this username
+        try (Cursor cursor = db.query(
+                "users",
+                new String[]{"id", "password", "password_salt"},
+                "username = ?",
+                new String[]{username},
+                null,
+                null,
+                null
+        )) {
+
+            // No matching username was found
+            if (!cursor.moveToFirst()) {
+                return -1;
+            }
+
+            // Retrieve the user's saved information
+            long userId = cursor.getLong(
+                    cursor.getColumnIndexOrThrow("id")
+            );
+
+            String storedHash = cursor.getString(
+                    cursor.getColumnIndexOrThrow("password_hash")
+            );
+
+            String salt = cursor.getString(
+                    cursor.getColumnIndexOrThrow("password_salt")
+            );
+
+            // Verify the entered password
+            boolean passwordMatches = PasswordUtils.verifyPassword(
+                            password,
+                            salt,
+                            storedHash
+            );
+
+            if (passwordMatches) {
+                return userId;
+            }
+
+            return -1;
+        }
+    }
 
     @Override
     public void onUpgrade(SQLiteDatabase db,
