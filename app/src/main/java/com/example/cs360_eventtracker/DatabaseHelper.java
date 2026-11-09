@@ -91,17 +91,81 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         );
     }
 
-    public boolean deleteEvent(long eventId) {
+    public boolean deleteEvent(long eventId, Long userId) {
 
         SQLiteDatabase db = getWritableDatabase();
 
+        String whereClause;
+        String[] whereArgs;
+
+        if (userId == null) {
+            // Delete an event belonging to a guest
+            whereClause = "id = ? AND user_id IS NULL";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId)
+            };
+        } else {
+            // Delete an event belonging to the logged-in user
+            whereClause = "id = ? AND user_id = ?";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId),
+                    String.valueOf(userId)
+            };
+        }
+
         int rowsDeleted = db.delete(
                 "events",
-                "id = ? AND user_id IS NULL",
-                new String[]{String.valueOf(eventId)}
+                whereClause,
+                whereArgs
         );
 
         return rowsDeleted > 0;
+    }
+
+    public boolean updateEvents(long eventId, Long userId,
+                                String name, String date,
+                                String location) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put("name", name);
+        values.put("date", date);
+        values.put("location", location);
+
+        String whereClause;
+        String[] whereArgs;
+
+        if (userId == null) {
+
+            // Update a guest event
+            whereClause = "id = ? AND user_id IS NULL";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId)
+            };
+
+        } else {
+
+            // Update an event belonging to a specific user
+            whereClause = "id = ? AND user_id = ?";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId),
+                    String.valueOf(userId)
+            };
+        }
+
+        int rowsUpdated = db.update(
+                "events",
+                values,
+                whereClause,
+                whereArgs
+        );
+
+        return rowsUpdated > 0;
     }
 
     public long createUser(String username, String password) {
@@ -138,7 +202,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // Look for an account with this username
         try (Cursor cursor = db.query(
                 "users",
-                new String[]{"id", "password", "password_salt"},
+                new String[]{"id", "password_hash", "password_salt"},
                 "username = ?",
                 new String[]{username},
                 null,

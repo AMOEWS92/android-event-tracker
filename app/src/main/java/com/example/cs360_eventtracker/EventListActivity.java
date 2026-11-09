@@ -21,13 +21,27 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import android.content.DialogInterface;
+import android.widget.LinearLayout;
+import androidx.appcompat.app.AlertDialog;
+
 public class EventListActivity extends AppCompatActivity {
+
+    private Long currentUserId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_event_list);
+
+        long incomingUserId = getIntent().getLongExtra("USER_ID", -1L);
+
+        if (incomingUserId > 0) {
+            currentUserId = incomingUserId;
+        } else {
+            currentUserId = null;
+        }
 
         DatabaseHelper dbHelper = new DatabaseHelper(this);
 
@@ -62,7 +76,7 @@ public class EventListActivity extends AppCompatActivity {
             }
 
             // Save the event as a guest event for now
-            long result = dbHelper.addEvent(null, name, date, location);
+            long result = dbHelper.addEvent(currentUserId, name, date, location);
 
             if (result != -1) {
                 Toast.makeText(this,
@@ -113,7 +127,7 @@ public class EventListActivity extends AppCompatActivity {
         }
 
         // Retrieve saved guest events
-        try (Cursor cursor = dbHelper.getEvents(null)) {
+        try (Cursor cursor = dbHelper.getEvents(currentUserId)) {
 
             while (cursor.moveToNext()) {
 
@@ -148,7 +162,7 @@ public class EventListActivity extends AppCompatActivity {
                             .setNegativeButton("Cancel", null)
                             .setPositiveButton("Delete", (dialog, which) ->{
 
-                                boolean deleted = dbHelper.deleteEvent(eventId);
+                                boolean deleted = dbHelper.deleteEvent(eventId, currentUserId);
 
                                 if (deleted) {
                                     Toast.makeText(this,
@@ -192,4 +206,57 @@ public class EventListActivity extends AppCompatActivity {
 
         return cell;
     }
+
+    private void showEditEventDialog(
+            long eventId,
+            String name,
+            String date,
+            String location,
+            DatabaseHelper dbHelper) {
+
+        // Create a vertical layout for the fields
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        int padding = (int) (
+                16 * getResources().getDisplayMetrics().density
+        );
+
+        layout.setPadding(padding, padding, padding, padding);
+
+        // Event name
+        EditText nameField = new EditText(this);
+        nameField.setHint("Event name");
+        nameField.setText(name);
+        layout.addView(nameField);
+
+        // Event date
+        EditText dateField = new EditText(this);
+        dateField.setHint("YYYY-MM-DD");
+        dateField.setText(date);
+        layout.addView(dateField);
+
+        // Event location
+        EditText locationField = new EditText(this);
+        locationField.setHint("Location");
+        locationField.setText(location);
+        layout.addView(locationField);
+
+        // Create the edit dialog
+        AlertDialog dialog = new AlertDialog.builder(this)
+                .setTitle("Edit Event")
+                .setView(layout)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Save", null)
+                .create();
+
+        dialog.setOnShowListener(ignored -> {
+
+            dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+                    .setOnClickListener(v -> {
+
+                    })
+        })
+    }
+    )
 }
