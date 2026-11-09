@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/eventListRoot"
@@ -16,11 +17,11 @@
         android:text="Upcoming Events"
         android:textSize="22sp"
         android:textStyle="bold"
+        android:layout_marginTop="24dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="24dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Navigation: open SMS notification settings -->
+    <!-- Navigation: open SMS settings -->
     <Button
         android:id="@+id/buttonOpenSmsSettings"
         android:layout_width="wrap_content"
@@ -31,7 +32,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Add-event fields group -->
+    <!-- Event name -->
     <EditText
         android:id="@+id/editEventName"
         android:layout_width="0dp"
@@ -43,17 +44,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Event date -->
     <EditText
         android:id="@+id/editEventDate"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Event date"
+        android:hint="YYYY-MM-DD"
         android:inputType="date"
         android:layout_marginTop="8dp"
         app:layout_constraintTop_toBottomOf="@id/editEventName"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Event time -->
+    <EditText
+        android:id="@+id/editEventTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Event time (HH:mm)"
+        android:inputType="time"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/editEventDate"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Event location -->
     <EditText
         android:id="@+id/editEventLocation"
         android:layout_width="0dp"
@@ -61,7 +76,22 @@
         android:hint="Location"
         android:inputType="textCapWords"
         android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/editEventDate"
+        app:layout_constraintTop_toBottomOf="@id/editEventTime"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Event description -->
+    <EditText
+        android:id="@+id/editEventDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Event description"
+        android:inputType="textCapSentences|textMultiLine"
+        android:minLines="2"
+        android:maxLines="3"
+        android:gravity="top"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/editEventLocation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -72,7 +102,7 @@
         android:layout_height="wrap_content"
         android:text="Add Event"
         android:layout_marginTop="12dp"
-        app:layout_constraintTop_toBottomOf="@id/editEventLocation"
+        app:layout_constraintTop_toBottomOf="@id/editEventDescription"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -118,10 +148,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Delete"
+                android:text="Actions"
                 android:textStyle="bold" />
-        </TableRow>
 
+        </TableRow>
 
     </TableLayout>
 

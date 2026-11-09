@@ -9,7 +9,7 @@ import android.database.Cursor;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "event_tracker.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -41,14 +41,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         "user_id INTEGER, " +
                         "name TEXT NOT NULL, " +
                         "date TEXT NOT NULL, " +
+                        "time TEXT, " +
                         "location TEXT, " +
+                        "description TEXT, " +
                         "FOREIGN KEY(user_id) REFERENCES users(id) " +
                         "ON DELETE CASCADE)";
         db.execSQL(createEventsTable);
     }
 
+
+    // Original method: four parameters
     public long addEvent(Long userId, String name,
-                         String date,String location) {
+                         String date, String location) {
+
+        return addEvent(
+                userId,
+                name,
+                date,
+                null,
+                location,
+                null
+        );
+    }
+
+    // New method: six parameters
+    public long addEvent(Long userId, String name,
+                         String date, String time,
+                         String location, String description) {
+
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues values = new ContentValues();
@@ -59,7 +79,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         values.put("name", name);
         values.put("date", date);
+        values.put("time", time);
         values.put("location", location);
+        values.put("description", description);
 
         return db.insert("events", null, values);
     }
@@ -82,7 +104,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         return db.query(
                 "events",
-                new String[]{"id", "name", "date", "location"},
+                new String[]{
+                        "id",
+                        "name",
+                        "date",
+                        "time",
+                        "location",
+                        "description"
+                },
                 selection,
                 selectionArgs,
                 null,
@@ -124,7 +153,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return rowsDeleted > 0;
     }
 
-    public boolean updateEvents(long eventId, Long userId,
+    public boolean updateEvent(long eventId, Long userId,
                                 String name, String date,
                                 String location) {
         SQLiteDatabase db = getWritableDatabase();
@@ -150,6 +179,54 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } else {
 
             // Update an event belonging to a specific user
+            whereClause = "id = ? AND user_id = ?";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId),
+                    String.valueOf(userId)
+            };
+        }
+
+        int rowsUpdated = db.update(
+                "events",
+                values,
+                whereClause,
+                whereArgs
+        );
+
+        return rowsUpdated > 0;
+    }
+
+    public boolean updateEvent(long eventId, Long userId,
+                               String name, String date,
+                               String time, String location,
+                               String description) {
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+
+        values.put("name", name);
+        values.put("date", date);
+        values.put("time", time);
+        values.put("location", location);
+        values.put("description", description);
+
+        String whereClause;
+        String[] whereArgs;
+
+        if (userId == null) {
+
+            // Update a guest event
+            whereClause = "id = ? AND user_id IS NULL";
+
+            whereArgs = new String[]{
+                    String.valueOf(eventId)
+            };
+
+        } else {
+
+            // Update an event belonging to a user
             whereClause = "id = ? AND user_id = ?";
 
             whereArgs = new String[]{
@@ -246,5 +323,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db,
                           int oldVersion, int newVersion) {
+        if (oldVersion < 2) {
+
+            db.execSQL(
+                    "ALTER TABLE events ADD COLUMN time TEXT"
+            );
+
+            db.execSQL(
+                    "ALTER TABLE events ADD COLUMN description TEXT"
+            );
+        }
     }
 }
