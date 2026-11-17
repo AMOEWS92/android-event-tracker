@@ -25,9 +25,20 @@ import java.time.format.DateTimeParseException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
+import java.time.format.ResolverStyle;
+
+import android.content.Intent;
+
+import android.Manifest;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.util.Log;
+import androidx.core.content.ContextCompat;
+
 public class EventListActivity extends AppCompatActivity {
 
     private Long currentUserId = null;
+    private DatabaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +55,7 @@ public class EventListActivity extends AppCompatActivity {
             currentUserId = null;
         }
 
-        DatabaseHelper dbHelper = new DatabaseHelper(this);
+        dbHelper = new DatabaseHelper(this);
 
         EditText eventName = findViewById(R.id.editEventName);
         EditText eventDate = findViewById(R.id.editEventDate);
@@ -54,6 +65,29 @@ public class EventListActivity extends AppCompatActivity {
 
 
         Button addEventButton = findViewById(R.id.buttonAddEvent);
+
+        // Connect the SMS settings button
+
+// Connect the SMS settings button
+        Button smsSettingsButton =
+                findViewById(R.id.buttonOpenSmsSettings);
+
+        smsSettingsButton.setOnClickListener(v -> {
+
+            Intent intent = new Intent(
+                    EventListActivity.this,
+                    SmsSettingsActivity.class
+            );
+
+            if (currentUserId != null) {
+                intent.putExtra("USER_ID", currentUserId.longValue());
+            }
+
+            startActivity(intent);
+        });
+
+
+
 
         // Handle adding a new event
         addEventButton.setOnClickListener(v -> {
@@ -87,6 +121,7 @@ public class EventListActivity extends AppCompatActivity {
                     LocalTime.parse(
                             time,
                             DateTimeFormatter.ofPattern("HH:mm")
+                                    .withResolverStyle(ResolverStyle.STRICT)
                     );
                 } catch (DateTimeParseException e) {
                     eventTime.setError("Use HH:mm, such as 14:30");
@@ -222,7 +257,9 @@ public class EventListActivity extends AppCompatActivity {
                             eventId,
                             name,
                             date,
+                            time,
                             location,
+                            description,
                             dbHelper
                     );
                 });
@@ -306,7 +343,9 @@ public class EventListActivity extends AppCompatActivity {
             long eventId,
             String name,
             String date,
+            String time,
             String location,
+            String description,
             DatabaseHelper dbHelper) {
 
         // Create a vertical layout for the input fields
@@ -319,23 +358,35 @@ public class EventListActivity extends AppCompatActivity {
 
         layout.setPadding(padding, padding, padding, padding);
 
-        // Event name field
+        // Event name
         EditText nameField = new EditText(this);
         nameField.setHint("Event name");
         nameField.setText(name);
         layout.addView(nameField);
 
-        // Event date field
+        // Event date
         EditText dateField = new EditText(this);
         dateField.setHint("YYYY-MM-DD");
         dateField.setText(date);
         layout.addView(dateField);
 
-        // Event location field
+        // Event time
+        EditText timeField = new EditText(this);
+        timeField.setHint("HH:mm");
+        timeField.setText(time);
+        layout.addView(timeField);
+
+        // Event location
         EditText locationField = new EditText(this);
         locationField.setHint("Location");
         locationField.setText(location);
         layout.addView(locationField);
+
+        // Event description
+        EditText descriptionField = new EditText(this);
+        descriptionField.setHint("Event description");
+        descriptionField.setText(description);
+        layout.addView(descriptionField);
 
         // Create the editing dialog
         AlertDialog dialog = new AlertDialog.Builder(this)
@@ -357,7 +408,13 @@ public class EventListActivity extends AppCompatActivity {
                         String updatedDate = dateField.getText()
                                 .toString().trim();
 
+                        String updatedTime = timeField.getText()
+                                .toString().trim();
+
                         String updatedLocation = locationField.getText()
+                                .toString().trim();
+
+                        String updatedDescription = descriptionField.getText()
                                 .toString().trim();
 
                         // Validate event name
@@ -374,13 +431,30 @@ public class EventListActivity extends AppCompatActivity {
                             return;
                         }
 
+                        // Validate event time if provided
+                        if (!updatedTime.isEmpty()) {
+                            try{
+                                LocalTime.parse(
+                                        updatedTime,
+                                        DateTimeFormatter.ofPattern("HH:mm")
+                                                .withResolverStyle(
+                                                        ResolverStyle.STRICT)
+                                );
+                            } catch (DateTimeParseException e) {
+                                timeField.setError("Use HH:mm, such as 14:30");
+                                return;
+                            }
+                        }
+
                         // Update the event in SQLite
                         boolean updated = dbHelper.updateEvent(
                                 eventId,
                                 currentUserId,
                                 updatedName,
                                 updatedDate,
-                                updatedLocation
+                                updatedTime,
+                                updatedLocation,
+                                updatedDescription
                         );
 
                         if (updated) {
@@ -389,10 +463,7 @@ public class EventListActivity extends AppCompatActivity {
                                     "Event updated successfully!",
                                     Toast.LENGTH_SHORT).show();
 
-                            // Reload the event list
                             refreshEventTable(dbHelper);
-
-                            // Close the dialog
                             dialog.dismiss();
 
                         } else {
@@ -401,10 +472,84 @@ public class EventListActivity extends AppCompatActivity {
                                     "Failed to update event.",
                                     Toast.LENGTH_SHORT).show();
                         }
-                    });
+            });
         });
 
-        // Display the editing dialog
         dialog.show();
+    }
+
+
+    private void checkForTodayReminders() {
+
+        // Check SMS permission
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.SEND_SMS
+        ) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        // Load account-specific preferences
+        String preferencesName;
+
+        if (currentUserId != null) {
+            preferencesName =
+                    "event_tracker_settings_user_" + currentUserId;
+        } else {
+            preferencesName = "event_tracker_settings_guest";
+        }
+
+        SharedPreferences preferences = getSharedPreferences(
+                preferencesName,
+                MODE_PRIVATE
+        );
+
+        // Check whether SMS reminders are enabled
+        boolean smsEnabled = preferences.getBoolean(
+                "sms_enabled", false
+        );
+
+        if (!smsEnabled) {
+            return;
+        }
+
+        // Check for a saved phone number
+        String phoneNumber = preferences.getString(
+                "phone_number", ""
+        );
+
+        if (phoneNumber.isEmpty()) {
+            return;
+        }
+
+        // Get today's date
+        String today = LocalDate.now().toString();
+
+        // Find events scheduled for today
+        int matchingEvents = 0;
+
+        try (Cursor cursor = dbHelper.getEvents(currentUserId)) {
+
+            while (cursor.moveToNext()) {
+
+                String eventDate = cursor.getString(
+                        cursor.getColumnIndexOrThrow("date")
+                );
+
+                if (today.equals(eventDate)) {
+                    matchingEvents++;
+                }
+            }
+        }
+
+        Log.d("SmsReminder",
+                "Events scheduled for today: " + matchingEvents);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        checkForTodayReminders();
     }
 }

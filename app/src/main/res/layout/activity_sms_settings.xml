@@ -75,6 +75,31 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+
+
+    <!-- Phone number for SMS reminders -->
+    <EditText
+        android:id="@+id/editPhoneNumber"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Phone number"
+        android:inputType="phone"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/textSmsStatus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Save phone number -->
+    <Button
+        android:id="@+id/buttonSavePhoneNumber"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Save Phone Number"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/editPhoneNumber"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Optional preview of the type of SMS they will get -->
     <TextView
         android:id="@+id/textSmsPreviewLabel"
@@ -83,7 +108,7 @@
         android:text="Sample reminder:"
         android:textStyle="bold"
         android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/textSmsStatus"
+        app:layout_constraintTop_toBottomOf="@id/buttonSavePhoneNumber"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
