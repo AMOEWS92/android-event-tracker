@@ -1,4 +1,3 @@
-
 package com.example.cs360_eventtracker;
 
 import android.content.DialogInterface;
@@ -34,6 +33,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.util.Log;
 import androidx.core.content.ContextCompat;
+
+import android.telephony.SmsManager;
+import java.util.ArrayList;
 
 public class EventListActivity extends AppCompatActivity {
 
@@ -536,8 +538,48 @@ public class EventListActivity extends AppCompatActivity {
                         cursor.getColumnIndexOrThrow("date")
                 );
 
+
                 if (today.equals(eventDate)) {
+
                     matchingEvents++;
+
+                    long eventId = cursor.getLong(
+                            cursor.getColumnIndexOrThrow("id")
+                    );
+
+                    String eventName = cursor.getString(
+                            cursor.getColumnIndexOrThrow("name")
+                    );
+
+                    String eventTime = cursor.getString(
+                            cursor.getColumnIndexOrThrow("time")
+                    );
+
+                    // Create a unique reminder key
+                    String reminderKey = "reminder_" + eventId + "_" + today;
+
+                    // Skip previously requested reminders
+                    if (preferences.getBoolean(reminderKey, false)) {
+                        continue;
+                    }
+
+                    // Generate the reminder message
+                    String message = "Event Tracker Reminder: Your event '"
+                            + eventName + "' is scheduled for today";
+
+                    if (eventTime != null && !eventTime.isEmpty()) {
+                        message += " at " + eventTime;
+                    }
+
+                    message += ".";
+
+                    // Request SMS delivery
+                    if (sendSmsReminder(phoneNumber, message)) {
+
+                        preferences.edit()
+                                .putBoolean(reminderKey, true)
+                                .apply();
+                    }
                 }
             }
         }
@@ -551,5 +593,53 @@ public class EventListActivity extends AppCompatActivity {
         super.onResume();
 
         checkForTodayReminders();
+    }
+
+
+    private boolean sendSmsReminder(String phoneNumber, String message) {
+
+        try {
+
+            SmsManager smsManager = getSystemService(SmsManager.class);
+
+            if (smsManager == null) {
+                Log.e("SmsReminder", "SMS service unavailable");
+                return false;
+            }
+
+            ArrayList<String> messageParts =
+                    smsManager.divideMessage(message);
+
+            if (messageParts.size() == 1) {
+
+                smsManager.sendTextMessage(
+                        phoneNumber,
+                        null,
+                        message,
+                        null,
+                        null
+                );
+
+            } else {
+
+                smsManager.sendMultipartTextMessage(
+                        phoneNumber,
+                        null,
+                        messageParts,
+                        null,
+                        null
+                );
+            }
+
+            Log.d("SmsReminder", "SMS reminder requested");
+
+            return true;
+
+        } catch (RuntimeException e) {
+
+            Log.e("SmsReminder", "SMS request failed", e);
+
+            return false;
+        }
     }
 }
